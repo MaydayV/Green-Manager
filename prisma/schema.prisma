@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  role      String   @default("user") // admin, user
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Device {
+  id         String    @id // devId from hardware
+  name       String?
+  token      String? // Admin token for control
+  ip         String?
+  status     String    @default("offline") // online, offline
+  lastSeen   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  autoAnswer Boolean   @default(false)
+  ttsContent String    @default("Hello, please leave a message.")
+  tags       String? // JSON array of tags
+  groupId    String?
+  
+  statuses    DeviceStatus[]
+  slots       Slot[]
+  messages    SmsMessage[]
+  calls       CallRecord[]
+  commands    CommandHistory[]
+  alerts      Alert[]
+  tasks       ScheduledTask[]
+  group       DeviceGroup?       @relation(fields: [groupId], references: [id])
+  wifiConfigs DeviceWifiConfig[]
+}
+
+model DeviceStatus {
+  id           Int      @id @default(autoincrement())
+  deviceId     String
+  wifiSsid     String?
+  wifiStrength Int?
+  temp         Float?
+  uptime       Int?
+  timestamp    DateTime @default(now())
+  
+  device Device @relation(fields: [deviceId], references: [id])
+}
+
+model Slot {
+  id             String   @id @default(uuid())
+  deviceId       String
+  slotNum        Int // 1 or 2
+  operator       String?
+  simStatus      String? // OK, ERR, NOSIM
+  imsi           String?
+  iccid          String?
+  phoneNumber    String?
+  signalStrength Int?
+  updatedAt      DateTime @updatedAt
+  
+  device  Device   @relation(fields: [deviceId], references: [id])
+  simCard SimCard?
+  
+  @@unique([deviceId, slotNum])
+}
+
+model SmsMessage {
+  id            String   @id @default(uuid())
+  deviceId      String
+  slotNum       Int
+  direction     String // incoming, outgoing
+  phone         String
+  content       String
+  timestamp     DateTime @default(now())
+  status        String? // sent, delivered, failed (for outgoing)
+  isRead        Boolean  @default(false)
+  category      String? // verification, bank, promotion, general
+  extractedData String? // JSON - extracted verification codes, balances, etc.
+
+  device Device @relation(fields: [deviceId], references: [id])
+}
+
+model CallRecord {
+  id           String   @id @default(uuid())
+  deviceId     String
+  slotNum      Int
+  direction    String // incoming, outgoing
+  phone        String
+  startTime    DateTime
+  duration     Int      @default(0) // seconds
+  status       String? // answered, missed, failed
+  recordingUrl String?
+  
+  device Device @relation(fields: [deviceId], references: [id])
+}
+
+model CommandHistory {
+  id         String    @id @default(uuid())
+  deviceId   String
+  command    String
+  params     String? // JSON
+  status     String    @default("pending") // pending, sent, success, failed
+  sentAt     DateTime  @default(now())
+  executedAt DateTime?
+  result     String? // JSON response or error
+  batchId    String?
+  batchName  String?
+  
+  device Device @relation(fields: [deviceId], references: [id])
+}
+
+model Alert {
+  id         String   @id @default(uuid())
+  deviceId   String
+  type       String
+  message    String
+  level      String   @default("info") // info, warning, error, critical
+  timestamp  DateTime @default(now())
+  isResolved Boolean  @default(false)
+  
+  device Device @relation(fields: [deviceId], references: [id])
+}
+
+model ScheduledTask {
+  id        String    @id @default(uuid())
+  deviceId  String? // null for global tasks
+  name      String
+  schedule  String // Cron expression
+  command   String
+  params    String?
+  enabled   Boolean   @default(true)
+  lastRun   DateTime?
+  createdAt DateTime  @default(now())
+  
+  device Device? @relation(fields: [deviceId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  target    String?
+  details   String? // JSON
+  timestamp DateTime @default(now())
+}
+
+model SystemApp {
+  id          String  @id @default(uuid())
+  name        String
+  description String
+  version     String
+  icon        String?
+  category    String
+  author      String?
+  features    String? // JSON list of features
+  
+  installs InstalledApp[]
+}
+
+model InstalledApp {
+  id          String   @id @default(uuid())
+  appId       String
+  installedAt DateTime @default(now())
+  status      String   @default("active") // active, disabled
+  config      String? // JSON config
+  
+  app SystemApp @relation(fields: [appId], references: [id])
+}
+
+model ApiKey {
+  id        String    @id @default(uuid())
+  key       String    @unique @default(uuid())
+  name      String
+  createdAt DateTime  @default(now())
+  lastUsed  DateTime?
+  isEnabled Boolean   @default(true)
+}
+
+// Device Groups
+model DeviceGroup {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  color       String? // Color for UI display
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  devices Device[]
+}
+
+// WiFi Configuration Templates
+model WifiTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  ssid        String
+  password    String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  deviceConfigs DeviceWifiConfig[]
+}
+
+// Device WiFi Configurations
+model DeviceWifiConfig {
+  id         String   @id @default(uuid())
+  deviceId   String
+  templateId String?
+  ssid       String
+  password   String
+  priority   Int      @default(0) // Lower number = higher priority
+  isActive   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  device   Device        @relation(fields: [deviceId], references: [id])
+  template WifiTemplate? @relation(fields: [templateId], references: [id])
+}
+
+// SMS Templates
+model SmsTemplate {
+  id        String   @id @default(uuid())
+  name      String
+  content   String
+  variables String? // JSON array of variable names like ["name", "date"]
+  category  String? // notification, marketing, verification, etc.
+  useCount  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// SIM Card Lifecycle
+model SimCard {
+  id                 String    @id @default(uuid())
+  slotId             String    @unique
+  operator           String?
+  phoneNumber        String?
+  iccid              String?
+  imsi               String?
+  activatedAt        DateTime?
+  expiryDate         DateTime?
+  balance            Float? // Last known balance
+  balanceUpdatedAt   DateTime?
+  dataUsage          Float? // MB
+  dataUsageUpdatedAt DateTime?
+  lifecycleStatus    String    @default("active") // active, expired, suspended
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  slot Slot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+}
+
+// Alert Rules
+model AlertRule {
+  id        String   @id @default(uuid())
+  name      String
+  type      String // offline, signal_low, sim_error, etc.
+  condition String // JSON condition config
+  actions   String // JSON array of actions: email, sms, webhook
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

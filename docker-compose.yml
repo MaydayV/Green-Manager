@@ -1,0 +1,15 @@
+version: '3'
+services:
+  greenpost:
+    build: .
+    image: greenpost-manager:latest
+    container_name: greenpost-manager
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=file:/app/db/dev.db
+      - NEXTAUTH_SECRET=changeme
+      - AUTH_SECRET=changeme
+    volumes:
+      - ./data:/app/db
