@@ -394,7 +394,6 @@ export default function DevicesPage() {
                             <SelectItem value="ip:asc">IP地址</SelectItem>
                         </SelectContent>
                     </Select>
-                </div>
             </div>
 
             <div className="rounded-lg border bg-card shadow-sm">

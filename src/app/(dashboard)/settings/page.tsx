@@ -98,20 +98,22 @@ export default function SettingsPage() {
             <PageHeader
                 title="系统设置"
                 description="管理系统配置和偏好设置"
-                <Button onClick={handleSave} disabled={saving}>
-                    {saving ? (
-                        <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                            保存中...
-                        </>
-                    ) : (
-                        <>
-                            <Save className="h-4 w-4 mr-2" />
-                            保存设置
-                        </>
-                    )}
-                </Button>
-            </div>
+                actions={
+                    <Button onClick={handleSave} disabled={saving}>
+                        {saving ? (
+                            <>
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                保存中...
+                            </>
+                        ) : (
+                            <>
+                                <Save className="h-4 w-4 mr-2" />
+                                保存设置
+                            </>
+                        )}
+                    </Button>
+                }
+            />
 
             <Tabs defaultValue="general" className="space-y-4">
                 <TabsList>

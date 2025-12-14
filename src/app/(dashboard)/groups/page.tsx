@@ -211,8 +211,9 @@ export default function GroupsPage() {
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
-                </div>
-            </div>
+                    </>
+                }
+            />
 
             {loading ? (
                 <div className="flex items-center justify-center py-12">
