@@ -122,5 +122,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     }
+  },
+  "overrides": {
+    "minimatch": "^11.0.9"
   }
 }
